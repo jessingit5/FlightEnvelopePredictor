@@ -1,0 +1,69 @@
+import os
+import time
+import requests
+import pandas as pd
+import mwparserfromhell as mwp
+from bs4 import BeautifulSoup
+
+HEADERS = {"User-Agent": "portfolio-project/1.0 (personal learning project)"}
+LIST_PAGE_URL = "https://en.wikipedia.org/wiki/List_of_active_United_States_military_aircraft"
+OUTPUT_FILE = "data/aircraft_specs.csv"
+DELAY_BETWEEN_REQUESTS = 1.0
+
+FIELD_MAP = {
+    "crew": "crew",
+    "length ft": "length_ft",
+    "span ft": "wingspan_ft",
+    "height ft": "height_ft",
+    "wing area sqft": "wing_area_sqft",
+    "empty weight lb": "empty_weight_lb",
+    "gross weight lb": "gross_weight_lb",
+    "max takeoff weight lb": "max_takeoff_weight_lb",
+    "eng1 number": "engine_count",
+    "eng1 lbf": "engine_thrust_lbf",
+    "eng1 lbf-ab": "engine_thrust_ab_lbf",
+    "max speed mach": "max_speed_mach",
+    "max speed kts": "max_speed_kts",
+    "cruise speed kts": "cruise_speed_kts",
+    "combat range nmi": "combat_range_nmi",
+    "ferry range nmi": "ferry_range_nmi",
+    "range nmi": "range_nmi",
+    "ceiling ft": "service_ceiling_ft",
+}
+
+def get_aircraft_list():
+    print("Requesting Wikipedia page...")
+    try:
+        response = requests.get(LIST_PAGE_URL, headers=HEADERS, timeout=15)
+        print("Got response:", response.status_code)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        print("Request failed:", e)
+        return []
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    tables = soup.find_all("table", class_="wikitable")
+    print("Found tables:", len(tables))
+
+    titles = []
+    for table in tables:
+        for row in table.find_all("tr"):
+            first_cell = row.find("td")
+            if first_cell is None:
+                continue
+            link = first_cell.find("a")
+            if link is None:
+                continue
+            title = link.get("title")
+            if title:
+                titles.append(title)
+
+    return list(dict.fromkeys(titles))
+def main():
+    print("Step 1: fetching aircraft list...")
+    aircraft_titles = get_aircraft_list()
+    print(f"  found {len(aircraft_titles)} unique aircraft")
+    print(get_aircraft_list())
+
+if __name__ == "__main__":
+    main()
