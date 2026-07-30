@@ -106,6 +106,32 @@ def first_number(text):
             continue
     return None
 
+def get_spec_template(wikitext):
+    """Find the {{Aircraft specs ...}} template inside a page's wikitext."""
+    parsed = mwp.parse(wikitext)
+    for template in parsed.filter_templates():
+        if template.name.strip().lower().startswith("aircraft spec"):
+            return template
+    return None
+
+def extract_features(title):
+    """Return a dict of numeric specs for one aircraft, or None if unavailable."""
+    wikitext = get_wikitext(title)
+    if wikitext is None:
+        return None
+ 
+    template = get_spec_template(wikitext)
+    if template is None:
+        return None
+ 
+    row = {"aircraft": title}
+    for wiki_field, column_name in FIELD_MAP.items():
+        if template.has(wiki_field):
+            clean_text = template.get(wiki_field).value.strip_code().strip()
+            row[column_name] = first_number(clean_text)
+        else:
+            row[column_name] = None
+    return row
 
 def main():
     print("Step 1: fetching aircraft list...")
