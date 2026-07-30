@@ -133,11 +133,38 @@ def extract_features(title):
             row[column_name] = None
     return row
 
+
+
 def main():
     print("Step 1: fetching aircraft list...")
     aircraft_titles = get_aircraft_list()
     print(f"  found {len(aircraft_titles)} unique aircraft")
-    print(get_aircraft_list())
-
+ 
+    print("Step 2: fetching specs for each aircraft...")
+    rows = []
+    skipped = []
+    for i, title in enumerate(aircraft_titles, start=1):
+        row = extract_features(title)
+        if row is None:
+            skipped.append(title)
+        else:
+            rows.append(row)
+ 
+        if i % 20 == 0 or i == len(aircraft_titles):
+            print(f"  processed {i}/{len(aircraft_titles)} "
+                  f"({len(rows)} ok, {len(skipped)} skipped)")
+ 
+        time.sleep(DELAY_BETWEEN_REQUESTS)
+ 
+    df = pd.DataFrame(rows)
+    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+    df.to_csv(OUTPUT_FILE, index=False)
+ 
+    print(f"\nDone. Saved {len(df)} aircraft to {OUTPUT_FILE}")
+    print(f"Skipped {len(skipped)} pages with no usable spec template:")
+    for title in skipped:
+        print(f"  - {title}")
+ 
+ 
 if __name__ == "__main__":
     main()
