@@ -59,6 +59,43 @@ def get_aircraft_list():
                 titles.append(title)
 
     return list(dict.fromkeys(titles))
+
+def get_wikitext(title, max_retries=3):
+    url = "https://en.wikipedia.org/w/api.php"
+    params = {
+        "action": "query",
+        "prop": "revisions",
+        "rvprop": "content",
+        "rvslots": "main",
+        "format": "json",
+        "titles": title,
+        "redirects": 1,
+    }
+ 
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, params=params, headers=HEADERS, timeout=15)
+        except requests.RequestException:
+            return None
+ 
+        if response.status_code == 429:
+            wait_seconds = int(response.headers.get("retry-after", 30))
+            print(f"    rate limited, waiting {wait_seconds}s...")
+            time.sleep(wait_seconds)
+            continue
+ 
+        try:
+            page = next(iter(response.json()["query"]["pages"].values()))
+        except (ValueError, KeyError):
+            return None
+ 
+        if "revisions" not in page:
+            return None
+        return page["revisions"][0]["slots"]["main"]["*"]
+ 
+    return None
+
+
 def main():
     print("Step 1: fetching aircraft list...")
     aircraft_titles = get_aircraft_list()
