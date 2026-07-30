@@ -95,6 +95,17 @@ def get_wikitext(title, max_retries=3):
  
     return None
 
+def first_number(text):
+    """Grab the first word in a string that can be read as a number."""
+    if not text:
+        return None
+    for word in text.replace(",", "").split():
+        try:
+            return float(word)
+        except ValueError:
+            continue
+    return None
+
 
 def main():
     print("Step 1: fetching aircraft list...")
